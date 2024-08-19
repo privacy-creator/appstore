@@ -19,9 +19,6 @@ jobs:
         with:
           flutter-version: '3.7.0' # Specify the desired Flutter version
 
-      - name: Install dependencies
-        run: flutter pub get
-
       - name: Analyze project source
         run: flutter analyze
 
