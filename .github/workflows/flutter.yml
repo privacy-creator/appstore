@@ -29,6 +29,6 @@ jobs:
       # - name: Verify formatting
       #   run: flutter format --output=none --set-exit-if-changed .
 
-      # Uncomment this step if you want to build the project
-      # - name: Build APK
-      #   run: flutter build apk --release
+#       Uncomment this step if you want to build the project
+      - name: Build APK
+        run: flutter build apk --release
