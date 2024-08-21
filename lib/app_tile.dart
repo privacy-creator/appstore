@@ -1,51 +1,80 @@
+import 'package:android_apps/app_data.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/services.dart' show ByteData, rootBundle;
 import 'dart:io';
-import 'app_data.dart';
 
-class AppTile extends StatelessWidget {
+class AppTile extends StatefulWidget {
   final AppData appData;
 
-  const AppTile({super.key, required this.appData});
+  const AppTile({
+    super.key,
+    required this.appData,
+  });
+
+  @override
+  _AppTileState createState() => _AppTileState();
+}
+
+class _AppTileState extends State<AppTile> {
+  double _downloadProgress = 0.0; // Variable to track download progress
+  bool _isDownloading = false; // Variable to track if downloading is in progress
+
+  Future<void> downloadAndInstallApk(String url) async {
+    setState(() {
+      _isDownloading = true;
+    });
+
+    try {
+      // Get the external storage directory
+      Directory tempDir = await getExternalStorageDirectory() ??
+          (await getApplicationDocumentsDirectory());
+
+      // Define the path for the downloaded APK
+      String apkPath = '${tempDir.path}/${widget.appData.name}.apk';
+
+      // Download the APK file with progress callback
+      Dio dio = Dio();
+      await dio.download(
+        url,
+        apkPath,
+        onReceiveProgress: (received, total) {
+          setState(() {
+            _downloadProgress = received / total;
+          });
+        },
+      );
+
+      // Install the APK
+      await InstallPlugin.installApk(apkPath, appId: widget.appData.name);
+    } catch (e) {
+      print('Error downloading or installing APK: $e');
+    } finally {
+      setState(() {
+        _isDownloading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        try {
-          // Get the app's cache directory or external storage directory
-          Directory? tempDir = await getExternalStorageDirectory();
-          String tempPath = tempDir!.path;
-
-          // Construct the full path to the APK file in the assets
-          String apkAssetPath = 'apk/${appData.apkFileName}';
-          String apkFilePath = '$tempPath/${appData.apkFileName}';
-
-          // Copy the APK from assets to the temp directory
-          ByteData data = await rootBundle.load(apkAssetPath);
-          List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-          await File(apkFilePath).writeAsBytes(bytes);
-
-          // Install the APK
-          await InstallPlugin.installApk(apkFilePath);
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to install APK: $e')),
-          );
+    return ListTile(
+      leading: Icon(widget.appData.icon),
+      title: Text(widget.appData.name),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.appData.description),
+          if (_isDownloading)
+            LinearProgressIndicator(value: _downloadProgress),
+        ],
+      ),
+      onTap: () {
+        if (!_isDownloading) {
+          downloadAndInstallApk(widget.appData.apkUrl);
         }
       },
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.8, // Adjust for full-width display
-        child: Card(
-          child: ListTile(
-            leading: Icon(appData.icon),
-            title: Text(appData.name),
-            subtitle: Text(appData.description),
-          ),
-        ),
-      ),
     );
   }
 }

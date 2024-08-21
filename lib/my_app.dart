@@ -8,9 +8,41 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  // Variable to track theme mode
-  bool _isDarkMode = false;
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  late ThemeMode _themeMode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize theme mode based on system settings
+    _themeMode = WidgetsBinding.instance.window.platformBrightness == Brightness.dark
+        ? ThemeMode.dark
+        : ThemeMode.light;
+
+    // Observe theme mode changes
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    setState(() {
+      _themeMode = WidgetsBinding.instance.window.platformBrightness == Brightness.dark
+          ? ThemeMode.dark
+          : ThemeMode.light;
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,17 +57,11 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
         useMaterial3: true,
       ),
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: _themeMode, // Set the theme mode based on system settings
       home: MyHomePage(
         title: 'Privacy Apps',
-        onThemeChanged: _toggleTheme,
+        onThemeChanged: _toggleTheme, // Provide the callback function here
       ),
     );
-  }
-
-  void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
   }
 }
