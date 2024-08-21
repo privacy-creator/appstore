@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:io';
 
 class AppTile extends StatefulWidget {
@@ -48,7 +49,16 @@ class _AppTileState extends State<AppTile> {
 
       // Install the APK
       await InstallPlugin.installApk(apkPath, appId: widget.appData.name);
+      Fluttertoast.showToast(
+        msg: "Installation started",
+        toastLength: Toast.LENGTH_SHORT,
+      );
     } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Error downloading or installing APK: $e",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+      );
       print('Error downloading or installing APK: $e');
     } finally {
       setState(() {
@@ -56,6 +66,7 @@ class _AppTileState extends State<AppTile> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
